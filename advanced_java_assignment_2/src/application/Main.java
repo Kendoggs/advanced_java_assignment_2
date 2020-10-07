@@ -17,12 +17,14 @@ public class Main extends Application {
 				  
 			// Create a label 
 			Label name = new Label("Sharjeel");
+			Label name1 = new Label("Kenny");
 						
 			// Create a Stack Pane
 			 StackPane sp = new StackPane();
 				        
 			// Add field
 			sp.getChildren().add(name);
+			sp.getChildren().add(name1);
 			
 			BorderPane root = new BorderPane();
 			Scene scene = new Scene(sp,400,400);
