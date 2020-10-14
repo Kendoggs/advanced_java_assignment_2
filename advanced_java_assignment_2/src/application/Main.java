@@ -3,8 +3,20 @@ package application;
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileReader;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Hashtable;
+
+import javax.xml.parsers.DocumentBuilder;
+import javax.xml.parsers.DocumentBuilderFactory;
+import javax.xml.parsers.ParserConfigurationException;
+
+import org.w3c.dom.Document;
+import org.w3c.dom.Element;
+import org.w3c.dom.Node;
+import org.w3c.dom.NodeList;
+import org.xml.sax.SAXException;
+
 import javafx.application.Application;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
@@ -24,8 +36,7 @@ import javafx.scene.layout.HBox;
 
 public class Main extends Application {
 
-	File selectedFile = new File(""); 
-	ArrayList<String> arr = new ArrayList<>(); 
+	File selectedFile = new File("");  
 	
 	public static void main(String[] args) {
 		launch(args);
@@ -37,20 +48,94 @@ public class Main extends Application {
 		Button btnSource = new Button("Choose Source");
 		Label lblSource = new Label("");
 		HBox hboxSource = new HBox(btnSource,lblSource );
-		
-		Button btnSearch = new Button("Load Text");
-		btnSearch.setMinWidth(100);
-		HBox hbox = new HBox(btnSearch);
-		//hbox.setAlignment(Pos.CENTER); 
-		
+		hboxSource.setSpacing(10);
+		TextArea txtR = new TextArea();
+				
 		btnSource.setOnAction(e -> { 
+		
 			FileChooser  file = new FileChooser();
 			file.setTitle("Open File");		
 			selectedFile = file.showOpenDialog(stage); 
-			lblSource.setText(" "+selectedFile.getName()); 
-			});
+			lblSource.setText(selectedFile.getName()); 
 			
-		TextArea txtR = new TextArea();
+		});
+		
+		Button btnDOMParser = new Button("XML Parsing");
+		HBox hboxParsing = new HBox(btnDOMParser);
+		hboxParsing.setSpacing(10);
+		
+		btnDOMParser.setOnAction(e -> { 
+			
+			DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
+			
+			DocumentBuilder docBuilder = null;
+			try {
+				
+				docBuilder = factory.newDocumentBuilder();
+				
+			} catch (ParserConfigurationException e1) {
+				// TODO Auto-generated catch block
+				e1.printStackTrace();
+			}
+			
+			try {
+				Document doc = docBuilder.parse(selectedFile.getPath());
+				
+				doc.getDocumentElement().normalize();
+				txtR.setText("");
+				txtR.setText(txtR.getText() + "Root element :" + doc.getDocumentElement().getNodeName() + "\n" );
+		        NodeList nList = doc.getElementsByTagName("movie");
+		        txtR.setText(txtR.getText() + "----------------------------------" + "\n");
+		        
+		        for (int temp = 0; temp < nList.getLength(); temp++) {
+		            Node nNode = nList.item(temp);
+		            txtR.setText(txtR.getText() + "\nCurrent Element :" + nNode.getNodeName() + "\n");
+		            
+		            if (nNode.getNodeType() == Node.ELEMENT_NODE) {
+		               Element eElement = (Element) nNode;
+		                
+		               txtR.setText(txtR.getText() + "Title : " + eElement.getElementsByTagName("title").item(0).getTextContent() + "\n");
+		             
+		               txtR.setText(txtR.getText() + "Year : " + eElement.getElementsByTagName("year").item(0).getTextContent() + "\n");
+		              
+		               txtR.setText(txtR.getText() + "Rating : " + eElement.getElementsByTagName("rating").item(0).getTextContent() + "\n");
+		               
+		            	NodeList directorsList = eElement.getElementsByTagName("director");
+		            	for (int count = 0; count < directorsList.getLength(); count++) {
+		            		   
+		            	    Node nodeDirector = directorsList.item(count); 
+		            	    if (nodeDirector.getNodeType() == nodeDirector.ELEMENT_NODE) {
+		                         Element director = (Element) nodeDirector;
+   	                            
+		                         txtR.setText(txtR.getText() + "Director Name : " + director.getElementsByTagName("name").item(0).getTextContent() + "\n");
+		            	    }   
+		            	}
+		               
+		               NodeList genres = eElement.getElementsByTagName("item");
+		                           
+		            	   for (int count = 0; count < genres.getLength(); count++) {
+		            		   
+		            		   Node nodeItem = genres.item(count); 
+		            		   if (nodeItem.getNodeType() == nodeItem.ELEMENT_NODE) {
+		                           Element item = (Element) nodeItem;
+		                           txtR.setText(txtR.getText() + "Genre : " + item.getTextContent() + "\n");
+		                           
+		            		   }   
+		            	   }
+				         
+		            }
+		         }
+				
+			} catch (SAXException e1) {
+				// TODO Auto-generated catch block
+				e1.printStackTrace();
+			} catch (IOException e1) {
+				// TODO Auto-generated catch block
+				e1.printStackTrace();
+			}
+			
+			});
+		
 		txtR.setText(selectedFile.getName());
 		GridPane grdPane = new GridPane();
 		
@@ -59,10 +144,6 @@ public class Main extends Application {
 		Button keywordSearch = new Button("Search");
 		keywordSearch.setMinWidth(100);
 		HBox hboxSearch = new HBox(searchSource, text, keywordSearch);
-		//HBox search = new HBox(keywordSearch);
-		//search.setAlignment(Pos.CENTER);
-		
-	
 		
 		ToggleGroup Tgroup = new ToggleGroup();
 		RadioButton button1 = new RadioButton("Top-3 correlated keywords");
@@ -74,16 +155,12 @@ public class Main extends Application {
 		HBox Tgroup1 = new HBox(button1,button2);
 		HBox Tgroup2 = new HBox(button3,button4);
 		
-		
-		
 		Button btnBarChart = new Button("Bar Chart");
 		btnBarChart.setMinWidth(100);
 		Button btnPieChart = new Button("Pie Chart");
 		btnPieChart.setMinWidth(100);
 		
 		HBox hboxChart = new HBox(10, btnBarChart, btnPieChart);
-		//hboxChart.setAlignment(Pos.CENTER); 
-		
 		
 		grdPane.setPadding(new Insets(10,10,10,10));
 		grdPane.setMinSize(10, 10);
@@ -92,38 +169,16 @@ public class Main extends Application {
 		grdPane.setAlignment(Pos.CENTER);
 		
 		grdPane.addRow(0,hboxSource);
-		grdPane.addRow(1,hbox);
+		grdPane.addRow(1,hboxParsing);
 		grdPane.addRow(2, txtR);
 		grdPane.addRow(3, hboxSearch);
-		//grdPane.addRow(4, search);
 		grdPane.addRow(4,Tgroup1);
 		grdPane.addRow(5,Tgroup2);
 		grdPane.addRow(6, hboxChart);
 		
-		btnSearch.setOnAction(e -> {
-			BufferedReader reader = null;
-			try
-			{
-				txtR.setText("");
-				reader = new BufferedReader(new FileReader(selectedFile.getPath()));
-				String line = reader.readLine();
-				
-				while(line != null ) {					
-					arr.add(line.split(",")[4]);
-					txtR.setText(txtR.getText() + line + "\n");	
-					line = reader.readLine();
-				}
-				reader.close();
-			}catch(Exception er)
-			{
-				er.printStackTrace();				
-			}
-			
-		});
-		
 		Scene scene = new Scene(grdPane,500,600);
 		stage.setScene(scene);
-		stage.setTitle("Open File System");
+		stage.setTitle("Keyword Search System");
 		stage.show();
 	}
 }
